@@ -11,8 +11,8 @@ basic_robot.password = "raN___dOM_ p4S"; -- IMPORTANT: change it before running 
 
 basic_robot.admin_bot_pos = {x=0,y=1,z=0} -- position of admin robot spawner that will be run automatically on server start
 
-basic_robot.maxoperations = 10; -- how many operations (dig, place,move,...,generate energy,..) available per run,  0 = unlimited
-basic_robot.dig_require_energy = true; -- does robot require energy to dig stone?
+basic_robot.maxoperations = 50; -- how many operations (dig, place,move,...,generate energy,..) available per run,  0 = unlimited
+basic_robot.dig_require_energy = false; -- does robot require energy to dig stone?
 
 basic_robot.bad_inventory_blocks = { -- disallow taking from these nodes inventories to prevent player abuses
 	["craft_guide:sign_wall"] = true,
@@ -282,9 +282,9 @@ function getSandboxEnv (name)
 			end
 		},
 		
-		attack = function(target) return basic_robot.commands.attack(name,target) end, -- attack player if nearby
+		-- attack = function(target) return basic_robot.commands.attack(name,target) end, -- attack player if nearby
 		
-		grab = function(target) return basic_robot.commands.grab(name,target) end,
+		-- grab = function(target) return basic_robot.commands.grab(name,target) end,
 		
 		
 		say = function(text, pname)
@@ -761,6 +761,9 @@ local function runSandbox( name)
 	
 	data.operations = basic_robot.maxoperations;
 	data.t = os.clock()
+
+	-- hack 'infinite' eneregy
+	data.menergy = 1000
 	
 	setfenv( ScriptFunc, data.sandbox )
 	
@@ -779,7 +782,7 @@ local function runSandbox( name)
 		return RuntimeError
 	end
 	
-    return nil
+  return nil
 end
 
 -- note: to see memory used by lua in kbytes: collectgarbage("count")

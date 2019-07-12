@@ -661,33 +661,34 @@ minetest.register_node("basic_robot:button_"..number,
 	})
 end
 
+-- Hide buttons from the inventory since we're not using them
 
-register_robot_button("FF","FF","FF",1);
-register_robot_button("80","80","80",2);
-register_robot_button("FF","80","80",3);
-register_robot_button("80","FF","80",4);
-register_robot_button("80","80","FF",5);
-register_robot_button("FF","FF","80",6);
+-- register_robot_button("FF","FF","FF",1);
+-- register_robot_button("80","80","80",2);
+-- register_robot_button("FF","80","80",3);
+-- register_robot_button("80","FF","80",4);
+-- register_robot_button("80","80","FF",5);
+-- register_robot_button("FF","FF","80",6);
 
-for i = 0,9 do register_robot_button_number(i,i+7) end
-for i = 0,255 do register_robot_button_char(i,i+17) end
+-- for i = 0,9 do register_robot_button_number(i,i+7) end
+-- for i = 0,255 do register_robot_button_char(i,i+17) end
 
-register_robot_button_custom(273,"puzzle_switch_off")
-register_robot_button_custom(274,"puzzle_switch_on")
-register_robot_button_custom(275,"puzzle_button_off")
-register_robot_button_custom(276,"puzzle_button_on")
+-- register_robot_button_custom(273,"puzzle_switch_off")
+-- register_robot_button_custom(274,"puzzle_switch_on")
+-- register_robot_button_custom(275,"puzzle_button_off")
+-- register_robot_button_custom(276,"puzzle_button_on")
 
-register_robot_button_custom(277,"puzzle_equalizer")
-register_robot_button_custom(278,"puzzle_setter")
-register_robot_button_custom(279,"puzzle_piston")
+-- register_robot_button_custom(277,"puzzle_equalizer")
+-- register_robot_button_custom(278,"puzzle_setter")
+-- register_robot_button_custom(279,"puzzle_piston")
 
-register_robot_button_custom(280,"puzzle_diode")
-register_robot_button_custom(281,"puzzle_NOT")
-register_robot_button_custom(282,"puzzle_delayer")
-register_robot_button_custom(283,"puzzle_platform")
+-- register_robot_button_custom(280,"puzzle_diode")
+-- register_robot_button_custom(281,"puzzle_NOT")
+-- register_robot_button_custom(282,"puzzle_delayer")
+-- register_robot_button_custom(283,"puzzle_platform")
 
-register_robot_button_custom(284,"puzzle_giver")
-register_robot_button_custom(285,"puzzle_checker")
+-- register_robot_button_custom(284,"puzzle_giver")
+-- register_robot_button_custom(285,"puzzle_checker")
 
 
 
@@ -884,11 +885,13 @@ basic_robot.technic = { -- data cache
 }
 
 local chk_machine_level = function(inv,level) -- does machine have upgrade to be classified with at least "level"
-	if level < 1 then level = 1 end
-	local upg = {"default:diamondblock","default:mese","default:goldblock"};
-	for i = 1,#upg do
-		if not inv:contains_item("main",ItemStack(upg[i].. " " .. level)) then return false end
-	end
+	-- Always infinte level
+	
+	-- if level < 1 then level = 1 end
+	-- local upg = {"default:diamondblock","default:mese","default:goldblock"};
+	-- for i = 1,#upg do
+	-- 	if not inv:contains_item("main",ItemStack(upg[i].. " " .. level)) then return false end
+	-- end
 	return true
 end
 
