@@ -43,9 +43,25 @@ basic_robot.data.listening = {}; -- which robots listen to chat
 dofile(minetest.get_modpath("basic_robot").."/robogui.lua") -- gui stuff
 dofile(minetest.get_modpath("basic_robot").."/commands.lua")
 
-local check_code, preprocess_code,is_inside_string;
+--dofile(minetest.get_modpath("basic_robot").."/moon-bundle.lua")
+package.path = minetest.get_modpath("basic_robot") .. "/?.lua;" .. package.path
+package.loaded.moonscript = require("moon-bundle")
 
+local moonscript = require("moonscript.base")
+local parseMoonscript = require("moonscript.parse")
+local compileMoonscript = require("moonscript.compile")
 
+local CompileMoonscriptToLua, check_code, preprocess_code, is_inside_string;
+
+function CompileMoonscriptToLua(script)
+	tree, err, pos = parseMoonscript.string(script)
+	if not tree then return nil, '[moonscript parser] '..err end
+	lua_code, err, lineNo, lineStr = compileMoonscript.tree(tree)
+	if not lua_code then return nil, '[moonscript compiler] '..err end
+	f, err = loadstring("local tostring = _G.tostring; "..lua_code)
+	if err then return nil, '[lua parser] '..err end
+	return f, nil
+end
 
 -- SANDBOX for running lua code isolated and safely
 
@@ -476,7 +492,7 @@ function getSandboxEnv (name)
 				end
 			end
 			
-			local ScriptFunc, CompileError = loadstring( script )
+			local ScriptFunc, CompileError = CompileMoonscriptToLua( script )
 			if CompileError then
 				minetest.chat_send_player(name, "#code.run: compile error " .. CompileError )
 				return false
@@ -639,78 +655,80 @@ end
 
 preprocess_code = function(script, call_limit)  -- version 07/24/2018
 
+	return script
+
 	--[[ idea: in each local a = function (args) ... end insert counter like:
 	local a = function (args) counter_check_code ... end 
 	when counter exceeds limit exit with error
 	--]]
 	
-	script = script:gsub("%-%-%[%[.*%-%-%]%]",""):gsub("%-%-[^\n]*\n","\n") -- strip comments
-	script="_c_ = 0; " .. script;
+	-- script = script:gsub("%-%-%[%[.*%-%-%]%]",""):gsub("%-%-[^\n]*\n","\n") -- strip comments
+	-- script="_c_ = 0; " .. script;
 
-	-- process script to insert call counter in every function
-	local _increase_ccounter = " _c_ = _c_ + 1; if _c_ > " .. call_limit .. 
-	" then _G.error(\"Execution count \".. _c_ .. \" exceeded ".. call_limit .. "\") end; "
+	-- -- process script to insert call counter in every function
+	-- local _increase_ccounter = " _c_ = _c_ + 1; if _c_ > " .. call_limit .. 
+	-- " then _G.error(\"Execution count \".. _c_ .. \" exceeded ".. call_limit .. "\") end; "
 	
-	local i1=0; local i2 = 0;
-	local found = true;
+	-- local i1=0; local i2 = 0;
+	-- local found = true;
 	
-	local strings = identify_strings(script);
+	-- local strings = identify_strings(script);
 
-	local inserts = {};
+	-- local inserts = {};
 	
-	local constructs = {
-		{"while%s", "%sdo%s", 2, 6}, -- numbers: insertion pos = i2+2,  after skip to i1 = i12+6
-		{"function", ")", 0, 8},
-		{"for%s", "%sdo%s", 2, 4},
-		{"goto%s", nil , -1, 5},
-	}
+	-- local constructs = {
+	-- 	{"while%s", "%sdo%s", 2, 6}, -- numbers: insertion pos = i2+2,  after skip to i1 = i12+6
+	-- 	{"function", ")", 0, 8},
+	-- 	{"for%s", "%sdo%s", 2, 4},
+	-- 	{"goto%s", nil , -1, 5},
+	-- }
 	
-	for i = 1,#constructs do
-		i1 = 0; found = true
-		while (found) do -- PROCESS SCRIPT AND INSERT COUNTER AT PROBLEMATIC SPOTS
+	-- for i = 1,#constructs do
+	-- 	i1 = 0; found = true
+	-- 	while (found) do -- PROCESS SCRIPT AND INSERT COUNTER AT PROBLEMATIC SPOTS
 		
-			found = false;
+	-- 		found = false;
 	
-			i2=find_outside_string(script, constructs[i][1], i1, strings) -- first part of construct
-			if i2 then
-				local i21 = i2;
-				if constructs[i][2] then
-					i2 = find_outside_string(script, constructs[i][2], i2, strings); -- second part of construct ( if any )
-					if i2 then 
-						inserts[#inserts+1]= i2+constructs[i][3]; -- move to last position of construct[i][2]
-						found = true;
-					end
-				else
-					inserts[#inserts+1]= i2+constructs[i][3]
-					found = true -- 1 part construct
-				end
+	-- 		i2=find_outside_string(script, constructs[i][1], i1, strings) -- first part of construct
+	-- 		if i2 then
+	-- 			local i21 = i2;
+	-- 			if constructs[i][2] then
+	-- 				i2 = find_outside_string(script, constructs[i][2], i2, strings); -- second part of construct ( if any )
+	-- 				if i2 then 
+	-- 					inserts[#inserts+1]= i2+constructs[i][3]; -- move to last position of construct[i][2]
+	-- 					found = true;
+	-- 				end
+	-- 			else
+	-- 				inserts[#inserts+1]= i2+constructs[i][3]
+	-- 				found = true -- 1 part construct
+	-- 			end
 				
-				if found then 
-					i1=i21+constructs[i][4]; -- skip to after constructs[i][1]
-				end
-			end
+	-- 			if found then 
+	-- 				i1=i21+constructs[i][4]; -- skip to after constructs[i][1]
+	-- 			end
+	-- 		end
 				
-		end
-	end
+	-- 	end
+	-- end
 	
-	table.sort(inserts)
+	-- table.sort(inserts)
 	
-	-- add inserts
-	local ret = {};	i1=1;
-	for i = 1, #inserts do
-		i2 = inserts[i];
-		ret[#ret+1] = string.sub(script,i1,i2);
-		i1 = i2+1;
-	end
-	ret[#ret+1] = string.sub(script,i1);
+	-- -- add inserts
+	-- local ret = {};	i1=1;
+	-- for i = 1, #inserts do
+	-- 	i2 = inserts[i];
+	-- 	ret[#ret+1] = string.sub(script,i1,i2);
+	-- 	i1 = i2+1;
+	-- end
+	-- ret[#ret+1] = string.sub(script,i1);
 
-	script = table.concat(ret,_increase_ccounter)
-	return script:gsub("pause%(%)", "_c_ = 0; pause()") -- reset ccounter at pause
+	-- script = table.concat(ret,_increase_ccounter)
+	-- return script:gsub("pause%(%)", "_c_ = 0; pause()") -- reset ccounter at pause
 end
 
 
 local function CompileCode ( script )
-	local ScriptFunc, CompileError = loadstring( script )
+	local ScriptFunc, CompileError = CompileMoonscriptToLua( script )
 	if CompileError then
         return nil, CompileError
     end
@@ -1119,7 +1137,7 @@ local spawn_robot = function(pos,node,ttl)
 				return 
 			end
 			
-			local bytecode, err = loadstring( script )
+			local bytecode, err = CompileMoonscriptToLua( script )
 			if err then
 				meta:set_string("infotext","#COMPILE ERROR : " ..  err)
 				return
